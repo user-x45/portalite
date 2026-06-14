@@ -13,7 +13,7 @@ function initApp() {
   const HISTORY_KEY = 'search-history';
   const HISTORY_LIMIT = 20;
   const TRENDS_URL = 'https://trends.google.com/trending/rss?geo=JP';
-  const CORS_PROXY = 'https://corsproxy.io/?url=';
+  const CORS_PROXY = 'https://cors-proxy.asukasa462.workers.dev/?url=';
   let trendsData = null;
   let lastScrollPosition = 0;
   const copyrightText = document.getElementById('copyright-text');
