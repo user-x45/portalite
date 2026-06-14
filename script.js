@@ -9,32 +9,12 @@ function initApp() {
   const cancelButton = document.getElementById('cancel-button');
   const overlaySuggestions = document.getElementById('suggestions-container-overlay');
   const overlayClearButton = document.getElementById('clear-button-overlay');
-  const newsRssUrl = 'https://news.google.com/rss?hl=ja&gl=JP&ceid=JP:ja';
+  const newsRssUrl = 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRE5mTTJRU0FtVnVLQUFQAQ?hl=ja&gl=JP&ceid=JP:ja';
   const HISTORY_KEY = 'search-history';
   const HISTORY_LIMIT = 20;
   const TRENDS_URL = 'https://trends.google.com/trending/rss?geo=JP';
   const CORS_PROXY = 'https://cors-proxy.asukasa462.workers.dev/?url=';
   let trendsData = null;
-
-  async function fetchWithRetry(url, options = {}, retries = 3, delay = 1000) {
-    let lastError;
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        const response = await fetch(url, options);
-        if (!response.ok) {
-          throw new Error(`HTTP Error: ${response.status}`);
-        }
-        return response;
-      } catch (error) {
-        lastError = error;
-        if (attempt < retries) {
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      }
-    }
-    throw lastError;
-  }
-
   let lastScrollPosition = 0;
   const copyrightText = document.getElementById('copyright-text');
   const currentYear = new Date().getFullYear();
@@ -144,9 +124,9 @@ function initApp() {
     }
   }
   async function fetchNews() {
-    newsContainer.innerHTML = '<div class="text-center">ニュースを取得中...</div>';
     try {
-      const r = await fetchWithRetry(`${CORS_PROXY}${encodeURIComponent(newsRssUrl)}`, {}, 3, 1500);
+      newsContainer.innerHTML = '<div class="text-center">ニュースを取得中...</div>';
+      const r = await fetch(`${CORS_PROXY}${encodeURIComponent(newsRssUrl)}`);
       const txt = await r.text();
       const xml = new DOMParser().parseFromString(txt, 'text/xml');
       let items = Array.from(xml.querySelectorAll('item')).map(item => {
@@ -155,12 +135,17 @@ function initApp() {
         const pubDate = item.querySelector('pubDate')?.textContent;
         const source = item.querySelector('source')?.textContent;
         if (title && source) {
-          const suffix = ` - ${source}`;
-          if (title.endsWith(suffix)) {
-            title = title.substring(0, title.length - suffix.length);
-          }
+            const suffix = ` - ${source}`;
+            if (title.endsWith(suffix)) {
+                title = title.substring(0, title.length - suffix.length);
+            }
         }
-        return { title, link, pubDate, source };
+        return {
+          title,
+          link,
+          pubDate,
+          source
+        };
       }).filter(item => item.title && item.link && item.pubDate);
       items.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
       items = items.slice(0, 20);
@@ -189,17 +174,7 @@ function initApp() {
         `;
         newsContainer.appendChild(a);
       });
-      if (items.length === 0) {
-        throw new Error('No news items found');
-      }
-    } catch (error) {
-      newsContainer.innerHTML = `
-        <div class="text-center text-red-500">
-          ニュースの取得に失敗しました。<br>
-          再試行後も取得できませんでした。
-        </div>
-      `;
-    }
+    } catch {}
   }
   async function fetchAnniversaries() {
     const anniversaryContainer = document.getElementById('anniversary-container');
@@ -281,32 +256,25 @@ function initApp() {
   }
   async function fetchTrendsData() {
     try {
-      const response = await fetchWithRetry(`${CORS_PROXY}${encodeURIComponent(TRENDS_URL)}`, {}, 3, 1500);
+      const response = await fetch(`${CORS_PROXY}${encodeURIComponent(TRENDS_URL)}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
       const text = await response.text();
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(text, 'text/xml');
       trendsData = Array.from(xmlDoc.querySelectorAll('item')).slice(0, 10).map(item => {
         const title = item.querySelector('title')?.textContent;
         const link = item.querySelector('link')?.textContent;
-        return { title, link };
+        return {
+          title,
+          link
+        };
       });
-      if (!trendsData.length) {
-        throw new Error('No trend items found');
-      }
       updateTrendsDisplay(overlaySuggestions);
       updateTrendsDisplay(mainSuggestions);
     } catch (error) {
       trendsData = null;
-      [mainSuggestions, overlaySuggestions].forEach(container => {
-        const trendsEl = container.querySelector('#trends-container');
-        if (trendsEl) {
-          trendsEl.innerHTML = `
-            <p class="text-sm text-red-500 pl-2">
-              トレンドの取得に失敗しました。再試行後も取得できませんでした。
-            </p>
-          `;
-        }
-      });
     }
   }
   function updateTrendsDisplay(container) {
