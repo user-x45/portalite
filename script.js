@@ -15,6 +15,26 @@ function initApp() {
   const TRENDS_URL = 'https://trends.google.com/trending/rss?geo=JP';
   const CORS_PROXY = 'https://cors-proxy.asukasa462.workers.dev/?url=';
   let trendsData = null;
+
+  async function fetchWithRetry(url, options = {}, retries = 3, delay = 1000) {
+    let lastError;
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+          throw new Error(`HTTP Error: ${response.status}`);
+        }
+        return response;
+      } catch (error) {
+        lastError = error;
+        if (attempt < retries) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    throw lastError;
+  }
+
   let lastScrollPosition = 0;
   const copyrightText = document.getElementById('copyright-text');
   const currentYear = new Date().getFullYear();
@@ -123,10 +143,10 @@ function initApp() {
       }
     }
   }
-  async function fetchNewsWithRetry(retryCount = 0, maxRetries = 3) {
+  async function fetchNews() {
+    newsContainer.innerHTML = '<div class="text-center">ニュースを取得中...</div>';
     try {
-      newsContainer.innerHTML = '<div class="text-center">ニュースを取得中...</div>';
-      const r = await fetch(`${CORS_PROXY}${encodeURIComponent(newsRssUrl)}`);
+      const r = await fetchWithRetry(`${CORS_PROXY}${encodeURIComponent(newsRssUrl)}`, {}, 3, 1500);
       const txt = await r.text();
       const xml = new DOMParser().parseFromString(txt, 'text/xml');
       let items = Array.from(xml.querySelectorAll('item')).map(item => {
@@ -135,21 +155,13 @@ function initApp() {
         const pubDate = item.querySelector('pubDate')?.textContent;
         const source = item.querySelector('source')?.textContent;
         if (title && source) {
-            const suffix = ` - ${source}`;
-            if (title.endsWith(suffix)) {
-                title = title.substring(0, title.length - suffix.length);
-            }
+          const suffix = ` - ${source}`;
+          if (title.endsWith(suffix)) {
+            title = title.substring(0, title.length - suffix.length);
+          }
         }
-        return {
-          title,
-          link,
-          pubDate,
-          source
-        };
+        return { title, link, pubDate, source };
       }).filter(item => item.title && item.link && item.pubDate);
-      if (items.length === 0) {
-        throw new Error('No news items found');
-      }
       items.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
       items = items.slice(0, 20);
       newsContainer.innerHTML = '';
@@ -177,14 +189,16 @@ function initApp() {
         `;
         newsContainer.appendChild(a);
       });
-    } catch (error) {
-      if (retryCount < maxRetries) {
-        newsContainer.innerHTML = `<div class="text-center">ニュースの再取得中... (${retryCount + 1}/${maxRetries})</div>`;
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        return fetchNewsWithRetry(retryCount + 1, maxRetries);
-      } else {
-        newsContainer.innerHTML = '<div class="text-center text-red-500">ニュースの取得に失敗しました。後で更新される可能性があります。</div>';
+      if (items.length === 0) {
+        throw new Error('No news items found');
       }
+    } catch (error) {
+      newsContainer.innerHTML = `
+        <div class="text-center text-red-500">
+          ニュースの取得に失敗しました。<br>
+          再試行後も取得できませんでした。
+        </div>
+      `;
     }
   }
   async function fetchAnniversaries() {
@@ -265,46 +279,40 @@ function initApp() {
       return [];
     }
   }
-  async function fetchTrendsDataWithRetry(retryCount = 0, maxRetries = 3) {
+  async function fetchTrendsData() {
     try {
-      const response = await fetch(`${CORS_PROXY}${encodeURIComponent(TRENDS_URL)}`);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
+      const response = await fetchWithRetry(`${CORS_PROXY}${encodeURIComponent(TRENDS_URL)}`, {}, 3, 1500);
       const text = await response.text();
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(text, 'text/xml');
-      const items = Array.from(xmlDoc.querySelectorAll('item')).slice(0, 10).map(item => {
+      trendsData = Array.from(xmlDoc.querySelectorAll('item')).slice(0, 10).map(item => {
         const title = item.querySelector('title')?.textContent;
         const link = item.querySelector('link')?.textContent;
-        return {
-          title,
-          link
-        };
+        return { title, link };
       });
-      if (items.length === 0) {
-        throw new Error('No trends found');
+      if (!trendsData.length) {
+        throw new Error('No trend items found');
       }
-      trendsData = items;
       updateTrendsDisplay(overlaySuggestions);
       updateTrendsDisplay(mainSuggestions);
     } catch (error) {
-      if (retryCount < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        return fetchTrendsDataWithRetry(retryCount + 1, maxRetries);
-      } else {
-        trendsData = null;
-        updateTrendsDisplay(overlaySuggestions);
-        updateTrendsDisplay(mainSuggestions);
-      }
+      trendsData = null;
+      [mainSuggestions, overlaySuggestions].forEach(container => {
+        const trendsEl = container.querySelector('#trends-container');
+        if (trendsEl) {
+          trendsEl.innerHTML = `
+            <p class="text-sm text-red-500 pl-2">
+              トレンドの取得に失敗しました。再試行後も取得できませんでした。
+            </p>
+          `;
+        }
+      });
     }
   }
   function updateTrendsDisplay(container) {
     let trendsEl = container.querySelector('#trends-container');
     if (trendsEl && trendsData) {
       renderTrends(trendsData.slice(0, 10), trendsEl);
-    } else if (trendsEl && !trendsData) {
-      trendsEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 mb-2 pl-2">トレンド情報を取得できませんでした</p>';
     }
   }
   function renderTrends(items, trendsEl) {
@@ -392,7 +400,7 @@ function initApp() {
       if (trendsData) {
         renderTrends(trendsData.slice(0, 10), trendsEl);
       } else {
-        trendsEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 mb-2 pl-2">トレンド情報を取得できませんでした</p>';
+        trendsEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 mb-2 pl-2">現在のトレンドを取得中...</p>';
       }
     }
     container.classList.remove('hidden');
@@ -554,9 +562,9 @@ function initApp() {
   });
   toggleClearButton(mainInput.value, mainClearButton);
   fetchWeather();
-  fetchNewsWithRetry();
+  fetchNews();
   fetchAnniversaries();
-  fetchTrendsDataWithRetry().then(() => {
+  fetchTrendsData().then(() => {
     if (!mainSuggestions.classList.contains('hidden')) {
       renderSearchHistory(mainSuggestions);
     }
