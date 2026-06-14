@@ -135,16 +135,17 @@ function initApp() {
         const pubDate = item.querySelector('pubDate')?.textContent;
         let source = item.querySelector('source')?.textContent;
         if (title) {
-          const match = title.match(/（([^（）]+)）$/);
-          if (match) {
-            source = match[1].trim();
-            title = title.substring(0, title.lastIndexOf('（')).trim();
-          } else if (title && source) {
+          const lastParenMatch = title.match(/（([^（）]+)）$/);
+          if (lastParenMatch) {
+            source = lastParenMatch[1];
+            title = title.substring(0, lastParenMatch.index).trim();
+          }
+        }
+        if (title && source) {
             const suffix = ` - ${source}`;
             if (title.endsWith(suffix)) {
                 title = title.substring(0, title.length - suffix.length);
             }
-          }
         }
         return {
           title,
