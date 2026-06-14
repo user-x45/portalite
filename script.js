@@ -123,7 +123,7 @@ function initApp() {
       }
     }
   }
-  async function fetchNews() {
+  async function fetchNewsWithRetry(retryCount = 0, maxRetries = 3) {
     try {
       newsContainer.innerHTML = '<div class="text-center">ニュースを取得中...</div>';
       const r = await fetch(`${CORS_PROXY}${encodeURIComponent(newsRssUrl)}`);
@@ -147,6 +147,9 @@ function initApp() {
           source
         };
       }).filter(item => item.title && item.link && item.pubDate);
+      if (items.length === 0) {
+        throw new Error('No news items found');
+      }
       items.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
       items = items.slice(0, 20);
       newsContainer.innerHTML = '';
@@ -174,7 +177,15 @@ function initApp() {
         `;
         newsContainer.appendChild(a);
       });
-    } catch {}
+    } catch (error) {
+      if (retryCount < maxRetries) {
+        newsContainer.innerHTML = `<div class="text-center">ニュースの再取得中... (${retryCount + 1}/${maxRetries})</div>`;
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return fetchNewsWithRetry(retryCount + 1, maxRetries);
+      } else {
+        newsContainer.innerHTML = '<div class="text-center text-red-500">ニュースの取得に失敗しました。後で更新される可能性があります。</div>';
+      }
+    }
   }
   async function fetchAnniversaries() {
     const anniversaryContainer = document.getElementById('anniversary-container');
@@ -254,7 +265,7 @@ function initApp() {
       return [];
     }
   }
-  async function fetchTrendsData() {
+  async function fetchTrendsDataWithRetry(retryCount = 0, maxRetries = 3) {
     try {
       const response = await fetch(`${CORS_PROXY}${encodeURIComponent(TRENDS_URL)}`);
       if (!response.ok) {
@@ -263,7 +274,7 @@ function initApp() {
       const text = await response.text();
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(text, 'text/xml');
-      trendsData = Array.from(xmlDoc.querySelectorAll('item')).slice(0, 10).map(item => {
+      const items = Array.from(xmlDoc.querySelectorAll('item')).slice(0, 10).map(item => {
         const title = item.querySelector('title')?.textContent;
         const link = item.querySelector('link')?.textContent;
         return {
@@ -271,16 +282,29 @@ function initApp() {
           link
         };
       });
+      if (items.length === 0) {
+        throw new Error('No trends found');
+      }
+      trendsData = items;
       updateTrendsDisplay(overlaySuggestions);
       updateTrendsDisplay(mainSuggestions);
     } catch (error) {
-      trendsData = null;
+      if (retryCount < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return fetchTrendsDataWithRetry(retryCount + 1, maxRetries);
+      } else {
+        trendsData = null;
+        updateTrendsDisplay(overlaySuggestions);
+        updateTrendsDisplay(mainSuggestions);
+      }
     }
   }
   function updateTrendsDisplay(container) {
     let trendsEl = container.querySelector('#trends-container');
     if (trendsEl && trendsData) {
       renderTrends(trendsData.slice(0, 10), trendsEl);
+    } else if (trendsEl && !trendsData) {
+      trendsEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 mb-2 pl-2">トレンド情報を取得できませんでした</p>';
     }
   }
   function renderTrends(items, trendsEl) {
@@ -368,7 +392,7 @@ function initApp() {
       if (trendsData) {
         renderTrends(trendsData.slice(0, 10), trendsEl);
       } else {
-        trendsEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 mb-2 pl-2">現在のトレンドを取得中...</p>';
+        trendsEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 mb-2 pl-2">トレンド情報を取得できませんでした</p>';
       }
     }
     container.classList.remove('hidden');
@@ -530,9 +554,9 @@ function initApp() {
   });
   toggleClearButton(mainInput.value, mainClearButton);
   fetchWeather();
-  fetchNews();
+  fetchNewsWithRetry();
   fetchAnniversaries();
-  fetchTrendsData().then(() => {
+  fetchTrendsDataWithRetry().then(() => {
     if (!mainSuggestions.classList.contains('hidden')) {
       renderSearchHistory(mainSuggestions);
     }
