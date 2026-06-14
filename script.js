@@ -123,6 +123,19 @@ function initApp() {
       }
     }
   }
+  const OGP_API = 'https://ogp.asukasa462.workers.dev/?url=';
+  async function fetchOgpImage(url) {
+    try {
+      const res = await fetch(`${OGP_API}${encodeURIComponent(url)}`);
+      const text = await res.text();
+      if (!text || text.trim() === 'og:image not found') {
+        return null;
+      }
+      return text.trim();
+    } catch {
+      return null;
+    }
+  }
   async function fetchNews() {
     try {
       newsContainer.innerHTML = '<div class="text-center">ニュースを取得中...</div>';
@@ -143,24 +156,18 @@ function initApp() {
           }
         }
         if (title && source) {
-            const suffix = ` - ${source}`;
-            if (title.endsWith(suffix)) {
-                title = title.substring(0, title.length - suffix.length);
-            }
+          const suffix = ` - ${source}`;
+          if (title.endsWith(suffix)) {
+            title = title.substring(0, title.length - suffix.length);
+          }
         }
-        return {
-          title,
-          link,
-          pubDate,
-          source,
-          description
-        };
+        return { title, link, pubDate, source, description };
       }).filter(item => item.title && item.link && item.pubDate);
       items.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
       items = items.slice(0, 20);
       newsContainer.innerHTML = '';
       const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-      items.forEach(item => {
+      for (const item of items) {
         let formattedDate = '';
         if (item.pubDate) {
           const d = new Date(item.pubDate);
@@ -177,13 +184,34 @@ function initApp() {
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
         a.className = 'news-item block transition-colors duration-300';
-        a.innerHTML = `
+        const innerWrapper = document.createElement('div');
+        innerWrapper.className = 'news-item-inner';
+        const ogpImageContainer = document.createElement('div');
+        ogpImageContainer.className = 'news-ogp-image-container';
+        innerWrapper.appendChild(ogpImageContainer);
+        const textContent = document.createElement('div');
+        textContent.className = 'news-text-content';
+        textContent.innerHTML = `
           <p class="font-semibold text-lg sm:text-xl">${item.title}</p>
           <p class="text-base text-gray-600 dark:text-gray-300 mt-1 line-clamp-3">${item.description}</p>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${sourceText}${formattedDate}</p>
         `;
+        innerWrapper.appendChild(textContent);
+        a.appendChild(innerWrapper);
         newsContainer.appendChild(a);
-      });
+        fetchOgpImage(item.link).then(imageUrl => {
+          if (imageUrl) {
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = item.title;
+            img.className = 'news-ogp-image';
+            img.onerror = () => {
+              ogpImageContainer.remove();
+            };
+            ogpImageContainer.appendChild(img);
+          }
+        });
+      }
     } catch {}
   }
   async function fetchAnniversaries() {
