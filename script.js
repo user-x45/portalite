@@ -9,7 +9,7 @@ function initApp() {
   const cancelButton = document.getElementById('cancel-button');
   const overlaySuggestions = document.getElementById('suggestions-container-overlay');
   const overlayClearButton = document.getElementById('clear-button-overlay');
-  const newsRssUrl = 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRE5mTTJRU0FtVnVLQUFQAQ?hl=ja&gl=JP&ceid=JP:ja';
+  const newsRssUrl = 'https://news.google.com/rss?hl=ja&gl=JP&ceid=JP:ja';
   const HISTORY_KEY = 'search-history';
   const HISTORY_LIMIT = 20;
   const TRENDS_URL = 'https://trends.google.com/trending/rss?geo=JP';
