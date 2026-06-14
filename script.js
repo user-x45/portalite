@@ -134,6 +134,7 @@ function initApp() {
         const link = item.querySelector('link')?.textContent;
         const pubDate = item.querySelector('pubDate')?.textContent;
         let source = item.querySelector('source')?.textContent;
+        const description = item.querySelector('description')?.textContent || '';
         if (title) {
           const lastParenMatch = title.match(/\(([^()]+)\)$/);
           if (lastParenMatch) {
@@ -151,7 +152,8 @@ function initApp() {
           title,
           link,
           pubDate,
-          source
+          source,
+          description
         };
       }).filter(item => item.title && item.link && item.pubDate);
       items.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
@@ -177,7 +179,8 @@ function initApp() {
         a.className = 'news-item block transition-colors duration-300';
         a.innerHTML = `
           <p class="font-semibold text-lg sm:text-xl">${item.title}</p>
-          <p class="text-base text-gray-500 dark:text-gray-400 mt-1">${sourceText}${formattedDate}</p>
+          <p class="text-base text-gray-600 dark:text-gray-300 mt-1 line-clamp-3">${item.description}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${sourceText}${formattedDate}</p>
         `;
         newsContainer.appendChild(a);
       });
