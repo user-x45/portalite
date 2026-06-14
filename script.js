@@ -179,7 +179,7 @@ function initApp() {
         a.className = 'news-item block transition-colors duration-300';
         a.innerHTML = `
           <p class="font-semibold text-lg sm:text-xl">${item.title}</p>
-          <p class="text-base text-gray-600 dark:text-gray-300 mt-1">${item.description}</p>
+          <p class="text-base text-gray-600 dark:text-gray-300 mt-1 line-clamp-3">${item.description}</p>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${sourceText}${formattedDate}</p>
         `;
         newsContainer.appendChild(a);
