@@ -135,7 +135,7 @@ function initApp() {
         const pubDate = item.querySelector('pubDate')?.textContent;
         let source = item.querySelector('source')?.textContent;
         if (title) {
-          const lastParenMatch = title.match(/（([^()]+)）$/);
+          const lastParenMatch = title.match(/\(([^()]+)\)$/);
           if (lastParenMatch) {
             source = lastParenMatch[1];
             title = title.substring(0, lastParenMatch.index).trim();
