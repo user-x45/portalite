@@ -1,5 +1,5 @@
 @charset "UTF-8";
-* { font-family: "Noto Sans JP", "HiraginoSans-W2", "Hiragino Kaku Gothic ProN", Meiryo, "メイリオ", sans-serif; }
+* { font-family: "BIZ UDPGothic", "HiraginoSans-W2", "Hiragino Kaku Gothic ProN", Meiryo, "メイリオ", sans-serif; }
 body { background:#f3f4f6; color:#1f2937; }
 .card { background:#fff; }
 @media (prefers-color-scheme: dark) {
