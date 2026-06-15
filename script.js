@@ -19,8 +19,36 @@ function initApp() {
   const copyrightText = document.getElementById('copyright-text');
   const currentYear = new Date().getFullYear();
   copyrightText.textContent = `Copyright © ${currentYear} Portalite. All rights reserved.`;
+  function loadingSpinner(colSpan = '') {
+    const spanClass = colSpan ? ` col-span-${colSpan}` : '';
+    return `<div class="flex flex-col items-center justify-center py-6${spanClass} gap-3">
+      <svg class="animate-spin w-8 h-8 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+      </svg>
+      <span class="text-gray-400 text-base">読み込み中...</span>
+    </div>`;
+  }
+  function showError(container, message, retryFnName, colSpan = '') {
+    const spanClass = colSpan ? ` col-span-${colSpan}` : '';
+    const wrapper = document.createElement('div');
+    wrapper.className = `flex flex-col items-center justify-center py-6 text-center${spanClass}`;
+    const msg = document.createElement('p');
+    msg.className = 'text-red-500 text-base';
+    msg.textContent = message;
+    wrapper.appendChild(msg);
+    const btn = document.createElement('button');
+    btn.className = 'mt-3 px-4 py-2 rounded-2xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 active:bg-blue-700 transition-colors';
+    btn.textContent = '再試行';
+    btn.addEventListener('click', () => {
+      window[retryFnName]();
+    });
+    wrapper.appendChild(btn);
+    container.innerHTML = '';
+    container.appendChild(wrapper);
+  }
   async function fetchWeather() {
-    weatherContainer.innerHTML = '<div class="text-center col-span-3">天気情報を取得中...</div>';
+    weatherContainer.innerHTML = loadingSpinner('3');
     try {
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -63,7 +91,7 @@ function initApp() {
       if (!closestCity || minDistance > DISTANCE_THRESHOLD_KM) {
         throw new Error('Distance too far or no closest city found, falling back to Sapporo.');
       }
-      const weatherApiUrl = `https://weather.tsukumijima.net/api/forecast?city=${closestCity.id}`;
+      const weatherApiUrl = `https:
       const r = await fetch(weatherApiUrl);
       const data = await r.json();
       weatherContainer.innerHTML = '';
@@ -91,7 +119,7 @@ function initApp() {
       });
     } catch (error) {
       const sapporoCityId = '016010';
-      const weatherApiUrl = `https://weather.tsukumijima.net/api/forecast?city=${sapporoCityId}`;
+      const weatherApiUrl = `https:
       try {
         const r = await fetch(weatherApiUrl);
         const data = await r.json();
@@ -119,7 +147,7 @@ function initApp() {
           weatherContainer.appendChild(el);
         });
       } catch (sapporoError) {
-        weatherContainer.innerHTML = '<div class="text-center col-span-3 text-red-500">天気情報の取得に失敗しました。</div>';
+        showError(weatherContainer, '天気情報の取得に失敗しました。', 'retryWeather', '3');
       }
     }
   }
@@ -141,7 +169,7 @@ function initApp() {
   }
   async function fetchNews() {
     try {
-      newsContainer.innerHTML = '<div class="text-center">ニュースを取得中...</div>';
+      newsContainer.innerHTML = loadingSpinner();
       const r = await fetch(`${CORS_PROXY}${encodeURIComponent(newsRssUrl)}`);
       const txt = await r.text();
       const xml = new DOMParser().parseFromString(txt, 'text/xml');
@@ -215,11 +243,13 @@ function initApp() {
           }
         });
       }
-    } catch {}
+    } catch {
+      showError(newsContainer, 'ニュースの取得に失敗しました。', 'retryNews');
+    }
   }
   async function fetchAnniversaries() {
     const anniversaryContainer = document.getElementById('anniversary-container');
-    anniversaryContainer.innerHTML = '<div class="text-center">記念日情報を取得中...</div>';
+    anniversaryContainer.innerHTML = loadingSpinner();
     try {
       const response = await fetch('json/anniversary.json');
       const data = await response.json();
@@ -243,7 +273,7 @@ function initApp() {
         anniversaryContainer.innerHTML = '<div class="text-center">今日は特別な記念日はありません。</div>';
       }
     } catch (error) {
-      anniversaryContainer.innerHTML = '<div class="text-center text-red-500">記念日情報の取得に失敗しました。</div>';
+      showError(anniversaryContainer, '記念日情報の取得に失敗しました。', 'retryAnniversaries');
     }
   }
   function jsonp(url, params = {}, timeout = 5000) {
@@ -570,6 +600,9 @@ function initApp() {
     toggleClearButton(overlayInput.value, overlayClearButton);
   });
   toggleClearButton(mainInput.value, mainClearButton);
+  window.retryWeather = fetchWeather;
+  window.retryNews = fetchNews;
+  window.retryAnniversaries = fetchAnniversaries;
   fetchWeather();
   fetchNews();
   fetchAnniversaries();
