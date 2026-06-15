@@ -48,6 +48,37 @@ function initApp() {
     return false;
   }
 
+  async function fetchOgpImageWithRetry(url, maxRetries = 2, retryDelay = 800) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetch('https://ogp-scanner.kunon.jp/v2/ogp_info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error('OGP fetch failed');
+        const ogImage = data.result?.ogp?.['og:image']?.[0];
+        const twitterImage = data.result?.twitter?.['twitter:image']?.[0];
+        const imageUrl = ogImage || twitterImage || null;
+        if (imageUrl) {
+          await new Promise((resolve, reject) => {
+            const testImg = new Image();
+            testImg.onload = () => resolve();
+            testImg.onerror = () => reject(new Error('Image load failed'));
+            testImg.src = imageUrl;
+          });
+          return imageUrl;
+        }
+        throw new Error('No image found');
+      } catch (error) {
+        if (attempt === maxRetries) return null;
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
+    return null;
+  }
+
   async function fetchWeather() {
     return fetchWithRetry(async () => {
       try {
@@ -119,17 +150,6 @@ function initApp() {
     }, weatherContainer, '天気情報を取得中...', '天気情報の取得に失敗しました。', 2, 1500);
   }
 
-  async function fetchOgpImage(url) {
-    try {
-      const res = await fetch('https://ogp-scanner.kunon.jp/v2/ogp_info', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
-      const data = await res.json();
-      if (!data.success) return null;
-      const ogImage = data.result?.ogp?.['og:image']?.[0];
-      const twitterImage = data.result?.twitter?.['twitter:image']?.[0];
-      return ogImage || twitterImage || null;
-    } catch { return null; }
-  }
-
   async function fetchNews() {
     return fetchWithRetry(async () => {
       const r = await fetch(`${CORS_PROXY}${encodeURIComponent(newsRssUrl)}`);
@@ -180,16 +200,19 @@ function initApp() {
         innerWrapper.appendChild(textContent);
         a.appendChild(innerWrapper);
         newsContainer.appendChild(a);
-        fetchOgpImage(item.link).then(imageUrl => {
+        (async () => {
+          const imageUrl = await fetchOgpImageWithRetry(item.link, 2, 800);
           if (imageUrl) {
             const img = document.createElement('img');
             img.src = imageUrl;
             img.alt = item.title;
             img.className = 'news-ogp-image';
-            img.onerror = () => { ogpImageContainer.remove(); };
+            img.onerror = () => { if (ogpImageContainer.parentNode) ogpImageContainer.remove(); };
             ogpImageContainer.appendChild(img);
+          } else {
+            if (ogpImageContainer.parentNode) ogpImageContainer.remove();
           }
-        });
+        })();
       }
       return true;
     }, newsContainer, 'ニュースを取得中...', 'ニュースの取得に失敗しました。', 2, 1500);
