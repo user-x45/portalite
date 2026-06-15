@@ -299,44 +299,45 @@ body {
     object-fit: cover;
   }
 }
-
-#suggestions-container-main,
-#suggestions-container-overlay {
-  background: #ffffff;
-  border-color: #e5e7eb;
-}
-@media (prefers-color-scheme: dark) {
+@media (min-width: 640px) {
   #suggestions-container-main,
   #suggestions-container-overlay {
-    background: #2e2e2e;
-    border-color: #444444;
+    background: #ffffff;
+    border-color: #e5e7eb;
   }
-  #suggestions-container-main > div,
-  #suggestions-container-overlay > div {
-    background: #2e2e2e;
-    color: #e5e7eb;
-  }
-  #suggestions-container-main .border-b,
-  #suggestions-container-overlay .border-b,
-  #suggestions-container-main > div,
-  #suggestions-container-overlay > div {
-    border-bottom-color: #444444;
-  }
-  #suggestions-container-main .hover\:bg-gray-100:hover,
-  #suggestions-container-overlay .hover\:bg-gray-100:hover {
-    background-color: #3a3a3a;
-  }
-  #trends-container {
-    color: #e5e7eb;
-  }
-  #trends-container .border-gray-200 {
-    border-bottom-color: #444444;
-  }
-  #clear-all-history-button {
-    background-color: #3a3a3a;
-    color: #f87171;
-  }
-  #clear-all-history-button:hover {
-    background-color: #4a4a4a;
+  @media (prefers-color-scheme: dark) {
+    #suggestions-container-main,
+    #suggestions-container-overlay {
+      background: #2e2e2e;
+      border-color: #444444;
+    }
+    #suggestions-container-main > div,
+    #suggestions-container-overlay > div {
+      background: #2e2e2e;
+      color: #e5e7eb;
+    }
+    #suggestions-container-main .border-b,
+    #suggestions-container-overlay .border-b,
+    #suggestions-container-main > div,
+    #suggestions-container-overlay > div {
+      border-bottom-color: #444444;
+    }
+    #suggestions-container-main .hover\:bg-gray-100:hover,
+    #suggestions-container-overlay .hover\:bg-gray-100:hover {
+      background-color: #3a3a3a;
+    }
+    #trends-container {
+      color: #e5e7eb;
+    }
+    #trends-container .border-gray-200 {
+      border-bottom-color: #444444;
+    }
+    #clear-all-history-button {
+      background-color: #3a3a3a;
+      color: #f87171;
+    }
+    #clear-all-history-button:hover {
+      background-color: #4a4a4a;
+    }
   }
 }
