@@ -18,7 +18,7 @@ function initApp() {
   let lastScrollPosition = 0;
   const copyrightText = document.getElementById('copyright-text');
   const currentYear = new Date().getFullYear();
-  copyrightText.textContent = `Copyright © 2025 - ${currentYear} Portalite. All rights reserved.`;
+  copyrightText.textContent = `© 2025 - ${currentYear} Portalite`;
 
   function showLoading(container, message = '読み込み中...') {
     container.innerHTML = `<div class="flex flex-col items-center justify-center py-8"><div class="loading-spinner"></div><p class="mt-3 text-gray-500 dark:text-gray-400">${message}</p></div>`;
