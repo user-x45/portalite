@@ -123,15 +123,18 @@ function initApp() {
       }
     }
   }
-  const OGP_API = 'https://ogp.asukasa462.workers.dev/?url=';
   async function fetchOgpImage(url) {
     try {
-      const res = await fetch(`${OGP_API}${encodeURIComponent(url)}`);
-      const text = await res.text();
-      if (!text || text.trim() === 'og:image not found') {
-        return null;
-      }
-      return text.trim();
+      const res = await fetch('https://ogp-scanner.kunon.jp/v2/ogp_info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+      if (!data.success) return null;
+      const ogImage = data.result?.ogp?.['og:image']?.[0];
+      const twitterImage = data.result?.twitter?.['twitter:image']?.[0];
+      return ogImage || twitterImage || null;
     } catch {
       return null;
     }
