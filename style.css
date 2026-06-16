@@ -366,3 +366,48 @@ body {
 .retry-button:hover {
   background-color: #2563eb;
 }
+#earthquake-detail-overlay {
+  position: fixed;
+  top:0; left:0; width:100%; height:100%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  background-color: rgba(0,0,0,0.5);
+  z-index: 10000;
+}
+#earthquake-detail-inner {
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+@media (prefers-color-scheme: dark) {
+  #earthquake-detail-inner {
+    background-color: #242424 !important;
+    color: #e5e7eb;
+  }
+  #earthquake-detail-inner .border-b,
+  #earthquake-detail-content .border-b {
+    border-color: #333333 !important;
+  }
+}
+@media (max-width: 639px) {
+  #earthquake-detail-overlay {
+    align-items: flex-start;
+    background-color: #1a1a1a;
+    backdrop-filter: none;
+  }
+  #earthquake-detail-inner {
+    width: 100%;
+    max-width: 100%;
+    max-height: none;
+    min-height: calc(100vh - 2rem);
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+@media (max-width: 639px) and (prefers-color-scheme: light) {
+  #earthquake-detail-overlay {
+    background-color: #f3f4f6;
+  }
+}
