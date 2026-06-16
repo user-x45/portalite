@@ -218,6 +218,84 @@ function initApp() {
     }, newsContainer, 'ニュースを取得中...', 'ニュースの取得に失敗しました。', 2, 1500);
   }
 
+  const earthquakeContainer = document.getElementById('earthquake-container');
+  const earthquakeDetailOverlay = document.getElementById('earthquake-detail-overlay');
+  const earthquakeDetailClose = document.getElementById('earthquake-detail-close');
+  let lastScrollPositionEarthquake = 0;
+
+  function openEarthquakeDetail(quake) {
+    lastScrollPositionEarthquake = window.scrollY;
+    document.body.style.top = `-${lastScrollPositionEarthquake}px`;
+    document.body.classList.add('no-scroll');
+    const content = document.getElementById('earthquake-detail-content');
+    const time = new Date(quake.time);
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    const formattedTime = `${time.getFullYear()}年${time.getMonth() + 1}月${time.getDate()}日(${weekdays[time.getDay()]}) ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
+    const scaleLabel = { 10: '震度1', 20: '震度2', 30: '震度3', 40: '震度4', 45: '震度4強', 50: '震度5弱', 55: '震度5強', 60: '震度6弱', 65: '震度6強', 70: '震度7' };
+    const scaleText = scaleLabel[quake.maxScale] || (quake.maxScale === -1 ? '不明' : `震度${quake.maxScale}`);
+    const scaleColor = quake.maxScale >= 50 ? 'text-red-500' : quake.maxScale >= 40 ? 'text-orange-500' : quake.maxScale >= 30 ? 'text-yellow-500' : 'text-blue-500';
+    const domesticInfo = quake.domesticTsunami !== 'None' ? `<div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">国内津波</span><span class="font-medium">${quake.domesticTsunami}</span></div>` : '';
+    const foreignInfo = quake.foreignTsunami !== 'None' ? `<div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">海外津波</span><span class="font-medium">${quake.foreignTsunami}</span></div>` : '';
+    content.innerHTML = `
+      <div class="space-y-1">
+        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">発生時刻</span><span class="font-medium">${formattedTime}</span></div>
+        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">震源地</span><span class="font-medium">${quake.earthquake?.hypocenter?.name || '不明'}</span></div>
+        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">最大震度</span><span class="font-semibold ${scaleColor}">${scaleText}</span></div>
+        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">マグニチュード</span><span class="font-medium">${quake.earthquake?.hypocenter?.magnitude !== undefined && quake.earthquake.hypocenter.magnitude !== -1 ? `M${quake.earthquake.hypocenter.magnitude}` : '不明'}</span></div>
+        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">深さ</span><span class="font-medium">${quake.earthquake?.hypocenter?.depth !== undefined && quake.earthquake.hypocenter.depth !== -1 ? `${quake.earthquake.hypocenter.depth}km` : '不明'}</span></div>
+        ${domesticInfo}${foreignInfo}
+      </div>
+      ${quake.points && quake.points.length > 0 ? `
+      <div class="mt-4">
+        <p class="font-semibold mb-2">各地の震度</p>
+        <div class="space-y-1 max-h-40 overflow-y-auto pr-1">
+          ${quake.points.sort((a, b) => b.scale - a.scale).map(p => {
+            const ps = scaleLabel[p.scale] || `震度${p.scale}`;
+            const pc = p.scale >= 50 ? 'text-red-500' : p.scale >= 40 ? 'text-orange-500' : p.scale >= 30 ? 'text-yellow-500' : 'text-blue-500';
+            return `<div class="flex justify-between text-sm py-1 border-b border-gray-100 dark:border-gray-700"><span>${p.addr}</span><span class="font-medium ${pc}">${ps}</span></div>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+    `;
+    earthquakeDetailOverlay.style.display = 'flex';
+    earthquakeDetailOverlay.classList.remove('hidden');
+  }
+
+  function closeEarthquakeDetail() {
+    earthquakeDetailOverlay.style.display = 'none';
+    document.body.classList.remove('no-scroll');
+    document.body.style.top = '';
+    window.scrollTo(0, lastScrollPositionEarthquake);
+  }
+
+  if (earthquakeDetailClose) earthquakeDetailClose.addEventListener('click', closeEarthquakeDetail);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && earthquakeDetailOverlay && earthquakeDetailOverlay.style.display === 'flex') closeEarthquakeDetail(); });
+
+  async function fetchEarthquakes() {
+    return fetchWithRetry(async () => {
+      const r = await fetch('https://api.p2pquake.net/v2/history?codes=551&limit=3');
+      if (!r.ok) throw new Error('fetch failed');
+      const data = await r.json();
+      if (!Array.isArray(data) || data.length === 0) throw new Error('no data');
+      earthquakeContainer.innerHTML = '';
+      const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+      const scaleLabel = { 10: '震度1', 20: '震度2', 30: '震度3', 40: '震度4', 45: '震度4強', 50: '震度5弱', 55: '震度5強', 60: '震度6弱', 65: '震度6強', 70: '震度7' };
+      data.forEach((quake) => {
+        const time = new Date(quake.time);
+        const formattedTime = `${time.getMonth() + 1}月${time.getDate()}日(${weekdays[time.getDay()]}) ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
+        const scaleText = scaleLabel[quake.maxScale] || (quake.maxScale === -1 ? '不明' : `震度${quake.maxScale}`);
+        const scaleColor = quake.maxScale >= 50 ? 'text-red-500' : quake.maxScale >= 40 ? 'text-orange-500' : quake.maxScale >= 30 ? 'text-yellow-500' : 'text-blue-500';
+        const hypocenter = quake.earthquake?.hypocenter?.name || '不明';
+        const item = document.createElement('div');
+        item.className = 'news-item block cursor-pointer';
+        item.innerHTML = `<div class="flex items-center justify-between gap-2"><div class="flex-1 min-w-0"><p class="font-semibold text-base sm:text-lg truncate">${hypocenter}</p><p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">${formattedTime}</p></div><div class="flex-shrink-0 text-right"><span class="font-bold text-lg sm:text-xl ${scaleColor}">${scaleText}</span></div></div>`;
+        item.addEventListener('click', () => openEarthquakeDetail(quake));
+        earthquakeContainer.appendChild(item);
+      });
+      return true;
+    }, earthquakeContainer, '地震情報を取得中...', '地震情報の取得に失敗しました。', 2, 1500);
+  }
+
   async function fetchAnniversaries() {
     return fetchWithRetry(async () => {
       const response = await fetch('json/anniversary.json');
@@ -450,6 +528,7 @@ function initApp() {
   toggleClearButton(mainInput.value, mainClearButton);
 
   fetchWeather();
+  fetchEarthquakes();
   fetchNews();
   fetchAnniversaries();
   fetchTrendsData().then(() => {
