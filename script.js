@@ -218,6 +218,13 @@ function initApp() {
     }, newsContainer, 'ニュースを取得中...', 'ニュースの取得に失敗しました。', 2, 1500);
   }
 
+  function parseQuakeTime(str) {
+    if (!str) return new Date(NaN);
+    const m = str.match(/^(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})/);
+    if (!m) return new Date(NaN);
+    return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  }
+
   const earthquakeContainer = document.getElementById('earthquake-container');
   const earthquakeDetailOverlay = document.getElementById('earthquake-detail-overlay');
   const earthquakeDetailClose = document.getElementById('earthquake-detail-close');
@@ -228,21 +235,21 @@ function initApp() {
     document.body.style.top = `-${lastScrollPositionEarthquake}px`;
     document.body.classList.add('no-scroll');
     const content = document.getElementById('earthquake-detail-content');
-    const time = new Date(quake.time);
     const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-    const formattedTime = `${time.getFullYear()}年${time.getMonth() + 1}月${time.getDate()}日(${weekdays[time.getDay()]}) ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
     const scaleLabel = { 10: '震度1', 20: '震度2', 30: '震度3', 40: '震度4', 45: '震度4強', 50: '震度5弱', 55: '震度5強', 60: '震度6弱', 65: '震度6強', 70: '震度7' };
-    const scaleText = scaleLabel[quake.maxScale] || (quake.maxScale === -1 ? '不明' : `震度${quake.maxScale}`);
-    const scaleColor = quake.maxScale >= 50 ? 'text-red-500' : quake.maxScale >= 40 ? 'text-orange-500' : quake.maxScale >= 30 ? 'text-yellow-500' : 'text-blue-500';
-    const domesticInfo = quake.domesticTsunami !== 'None' ? `<div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">国内津波</span><span class="font-medium">${quake.domesticTsunami}</span></div>` : '';
-    const foreignInfo = quake.foreignTsunami !== 'None' ? `<div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">海外津波</span><span class="font-medium">${quake.foreignTsunami}</span></div>` : '';
+    const time = parseQuakeTime(quake.earthquake.time);
+    const formattedTime = `${time.getFullYear()}年${time.getMonth() + 1}月${time.getDate()}日(${weekdays[time.getDay()]}) ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
+    const scaleText = scaleLabel[quake.earthquake.maxScale] || (quake.earthquake.maxScale === -1 ? '不明' : `震度${quake.earthquake.maxScale}`);
+    const scaleColor = quake.earthquake.maxScale >= 50 ? 'text-red-500' : quake.earthquake.maxScale >= 40 ? 'text-orange-500' : quake.earthquake.maxScale >= 30 ? 'text-yellow-500' : 'text-blue-500';
+    const domesticInfo = quake.earthquake.domesticTsunami !== 'None' ? `<div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">国内津波</span><span class="font-medium">${quake.earthquake.domesticTsunami}</span></div>` : '';
+    const foreignInfo = quake.earthquake.foreignTsunami !== 'None' ? `<div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">海外津波</span><span class="font-medium">${quake.earthquake.foreignTsunami}</span></div>` : '';
     content.innerHTML = `
       <div class="space-y-1">
         <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">発生時刻</span><span class="font-medium">${formattedTime}</span></div>
-        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">震源地</span><span class="font-medium">${quake.earthquake?.hypocenter?.name || '不明'}</span></div>
+        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">震源地</span><span class="font-medium">${quake.earthquake.hypocenter?.name || '不明'}</span></div>
         <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">最大震度</span><span class="font-semibold ${scaleColor}">${scaleText}</span></div>
-        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">マグニチュード</span><span class="font-medium">${quake.earthquake?.hypocenter?.magnitude !== undefined && quake.earthquake.hypocenter.magnitude !== -1 ? `M${quake.earthquake.hypocenter.magnitude}` : '不明'}</span></div>
-        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">深さ</span><span class="font-medium">${quake.earthquake?.hypocenter?.depth !== undefined && quake.earthquake.hypocenter.depth !== -1 ? `${quake.earthquake.hypocenter.depth}km` : '不明'}</span></div>
+        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">マグニチュード</span><span class="font-medium">${quake.earthquake.hypocenter?.magnitude !== undefined && quake.earthquake.hypocenter.magnitude !== -1 ? `M${quake.earthquake.hypocenter.magnitude}` : '不明'}</span></div>
+        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500 dark:text-gray-400">深さ</span><span class="font-medium">${quake.earthquake.hypocenter?.depth !== undefined && quake.earthquake.hypocenter.depth !== -1 ? `${quake.earthquake.hypocenter.depth}km` : '不明'}</span></div>
         ${domesticInfo}${foreignInfo}
       </div>
       ${quake.points && quake.points.length > 0 ? `
@@ -281,11 +288,11 @@ function initApp() {
       const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
       const scaleLabel = { 10: '震度1', 20: '震度2', 30: '震度3', 40: '震度4', 45: '震度4強', 50: '震度5弱', 55: '震度5強', 60: '震度6弱', 65: '震度6強', 70: '震度7' };
       data.forEach((quake) => {
-        const time = new Date(quake.time);
+        const time = parseQuakeTime(quake.earthquake.time);
         const formattedTime = `${time.getMonth() + 1}月${time.getDate()}日(${weekdays[time.getDay()]}) ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
-        const scaleText = scaleLabel[quake.maxScale] || (quake.maxScale === -1 ? '不明' : `震度${quake.maxScale}`);
-        const scaleColor = quake.maxScale >= 50 ? 'text-red-500' : quake.maxScale >= 40 ? 'text-orange-500' : quake.maxScale >= 30 ? 'text-yellow-500' : 'text-blue-500';
-        const hypocenter = quake.earthquake?.hypocenter?.name || '不明';
+        const scaleText = scaleLabel[quake.earthquake.maxScale] || (quake.earthquake.maxScale === -1 ? '不明' : `震度${quake.earthquake.maxScale}`);
+        const scaleColor = quake.earthquake.maxScale >= 50 ? 'text-red-500' : quake.earthquake.maxScale >= 40 ? 'text-orange-500' : quake.earthquake.maxScale >= 30 ? 'text-yellow-500' : 'text-blue-500';
+        const hypocenter = quake.earthquake.hypocenter?.name || '不明';
         const item = document.createElement('div');
         item.className = 'news-item block cursor-pointer';
         item.innerHTML = `<div class="flex items-center justify-between gap-2"><div class="flex-1 min-w-0"><p class="font-semibold text-base sm:text-lg truncate">${hypocenter}</p><p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">${formattedTime}</p></div><div class="flex-shrink-0 text-right"><span class="font-bold text-lg sm:text-xl ${scaleColor}">${scaleText}</span></div></div>`;
