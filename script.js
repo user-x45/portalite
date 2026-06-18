@@ -150,13 +150,11 @@ function initApp() {
     }, weatherContainer, '天気情報を取得中...', '天気情報の取得に失敗しました。', 2, 1500);
   }
 
-  const NEWS_PAGE_SIZE = 20;
-  const NEWS_MAX_TOTAL = 100;
   let allNewsItems = [];
-  let renderedNewsCount = 0;
-  let newsMoreButtonWrapper = null;
+  let displayedCount = 0;
 
-  function renderNewsItem(item, weekdays) {
+  function createNewsItemElement(item) {
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
     let formattedDate = '';
     if (item.pubDate) {
       const d = new Date(item.pubDate);
@@ -183,7 +181,7 @@ function initApp() {
     textContent.innerHTML = `<p class="font-semibold text-lg sm:text-xl">${item.title}</p><p class="text-base text-gray-600 dark:text-gray-300 mt-1 line-clamp-3">${item.description}</p><p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${sourceText}${formattedDate}</p>`;
     innerWrapper.appendChild(textContent);
     a.appendChild(innerWrapper);
-    newsContainer.insertBefore(a, newsMoreButtonWrapper);
+    newsContainer.appendChild(a);
     (async () => {
       const imageUrl = await fetchOgpImageWithRetry(item.link, 2, 800);
       if (imageUrl) {
@@ -197,21 +195,32 @@ function initApp() {
         if (ogpImageContainer.parentNode) ogpImageContainer.remove();
       }
     })();
+    return a;
   }
 
-  function updateNewsMoreButtonVisibility() {
-    if (!newsMoreButtonWrapper) return;
-    const hasMore = renderedNewsCount < allNewsItems.length && renderedNewsCount < NEWS_MAX_TOTAL;
-    newsMoreButtonWrapper.classList.toggle('hidden', !hasMore);
-  }
-
-  function showMoreNews() {
-    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-    const remainingCapacity = NEWS_MAX_TOTAL - renderedNewsCount;
-    const nextItems = allNewsItems.slice(renderedNewsCount, renderedNewsCount + Math.min(NEWS_PAGE_SIZE, remainingCapacity));
-    nextItems.forEach(item => renderNewsItem(item, weekdays));
-    renderedNewsCount += nextItems.length;
-    updateNewsMoreButtonVisibility();
+  function addLoadMoreButton() {
+    let loadMoreBtn = document.getElementById('load-more-news');
+    if (loadMoreBtn) loadMoreBtn.remove();
+    if (displayedCount >= 100 || displayedCount >= allNewsItems.length) return;
+    loadMoreBtn = document.createElement('button');
+    loadMoreBtn.id = 'load-more-news';
+    loadMoreBtn.className = 'w-full mt-6 py-3 px-6 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-2xl transition-colors duration-200 flex items-center justify-center gap-2';
+    loadMoreBtn.innerHTML = `もっと見る <span class="text-sm">(${displayedCount}/${Math.min(100, allNewsItems.length)})</span>`;
+    loadMoreBtn.addEventListener('click', () => {
+      const nextBatch = Math.min(20, allNewsItems.length - displayedCount);
+      const start = displayedCount;
+      const end = start + nextBatch;
+      for (let i = start; i < end; i++) {
+        createNewsItemElement(allNewsItems[i]);
+      }
+      displayedCount = end;
+      if (displayedCount >= 100 || displayedCount >= allNewsItems.length) {
+        loadMoreBtn.style.display = 'none';
+      } else {
+        loadMoreBtn.innerHTML = `もっと見る <span class="text-sm">(${displayedCount}/${Math.min(100, allNewsItems.length)})</span>`;
+      }
+    });
+    newsContainer.parentNode.appendChild(loadMoreBtn);
   }
 
   async function fetchNews() {
@@ -233,21 +242,15 @@ function initApp() {
         return { title, link, pubDate, source, description };
       }).filter(item => item.title && item.link && item.pubDate);
       items.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-      items = items.slice(0, NEWS_MAX_TOTAL);
       allNewsItems = items;
-      renderedNewsCount = 0;
+      displayedCount = 0;
       newsContainer.innerHTML = '';
-      newsMoreButtonWrapper = document.createElement('div');
-      newsMoreButtonWrapper.className = 'pt-4 hidden flex justify-center';
-      const moreButton = document.createElement('button');
-      moreButton.id = 'news-more-button';
-      moreButton.type = 'button';
-      moreButton.className = 'px-6 py-2 rounded-full border border-gray-300 dark:border-gray-500 text-blue-500 font-semibold';
-      moreButton.textContent = 'もっと見る';
-      moreButton.addEventListener('click', showMoreNews);
-      newsMoreButtonWrapper.appendChild(moreButton);
-      newsContainer.appendChild(newsMoreButtonWrapper);
-      showMoreNews();
+      const initialBatch = Math.min(20, allNewsItems.length);
+      for (let i = 0; i < initialBatch; i++) {
+        createNewsItemElement(allNewsItems[i]);
+      }
+      displayedCount = initialBatch;
+      addLoadMoreButton();
       return true;
     }, newsContainer, 'ニュースを取得中...', 'ニュースの取得に失敗しました。', 2, 1500);
   }
