@@ -150,6 +150,70 @@ function initApp() {
     }, weatherContainer, '天気情報を取得中...', '天気情報の取得に失敗しました。', 2, 1500);
   }
 
+  const NEWS_PAGE_SIZE = 20;
+  const NEWS_MAX_TOTAL = 100;
+  let allNewsItems = [];
+  let renderedNewsCount = 0;
+  let newsMoreButtonWrapper = null;
+
+  function renderNewsItem(item, weekdays) {
+    let formattedDate = '';
+    if (item.pubDate) {
+      const d = new Date(item.pubDate);
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      const weekday = weekdays[d.getDay()];
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      formattedDate = `${month}月${day}日(${weekday}) ${hours}:${minutes}`;
+    }
+    const sourceText = item.source ? `<span class="font-medium">${item.source}</span> / ` : '';
+    const a = document.createElement('a');
+    a.href = item.link;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.className = 'news-item block transition-colors duration-300';
+    const innerWrapper = document.createElement('div');
+    innerWrapper.className = 'news-item-inner';
+    const ogpImageContainer = document.createElement('div');
+    ogpImageContainer.className = 'news-ogp-image-container';
+    innerWrapper.appendChild(ogpImageContainer);
+    const textContent = document.createElement('div');
+    textContent.className = 'news-text-content';
+    textContent.innerHTML = `<p class="font-semibold text-lg sm:text-xl">${item.title}</p><p class="text-base text-gray-600 dark:text-gray-300 mt-1 line-clamp-3">${item.description}</p><p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${sourceText}${formattedDate}</p>`;
+    innerWrapper.appendChild(textContent);
+    a.appendChild(innerWrapper);
+    newsContainer.insertBefore(a, newsMoreButtonWrapper);
+    (async () => {
+      const imageUrl = await fetchOgpImageWithRetry(item.link, 2, 800);
+      if (imageUrl) {
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.alt = item.title;
+        img.className = 'news-ogp-image';
+        img.onerror = () => { if (ogpImageContainer.parentNode) ogpImageContainer.remove(); };
+        ogpImageContainer.appendChild(img);
+      } else {
+        if (ogpImageContainer.parentNode) ogpImageContainer.remove();
+      }
+    })();
+  }
+
+  function updateNewsMoreButtonVisibility() {
+    if (!newsMoreButtonWrapper) return;
+    const hasMore = renderedNewsCount < allNewsItems.length && renderedNewsCount < NEWS_MAX_TOTAL;
+    newsMoreButtonWrapper.classList.toggle('hidden', !hasMore);
+  }
+
+  function showMoreNews() {
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    const remainingCapacity = NEWS_MAX_TOTAL - renderedNewsCount;
+    const nextItems = allNewsItems.slice(renderedNewsCount, renderedNewsCount + Math.min(NEWS_PAGE_SIZE, remainingCapacity));
+    nextItems.forEach(item => renderNewsItem(item, weekdays));
+    renderedNewsCount += nextItems.length;
+    updateNewsMoreButtonVisibility();
+  }
+
   async function fetchNews() {
     return fetchWithRetry(async () => {
       const r = await fetch(`${CORS_PROXY}${encodeURIComponent(newsRssUrl)}`);
@@ -169,51 +233,21 @@ function initApp() {
         return { title, link, pubDate, source, description };
       }).filter(item => item.title && item.link && item.pubDate);
       items.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-      items = items.slice(0, 20);
+      items = items.slice(0, NEWS_MAX_TOTAL);
+      allNewsItems = items;
+      renderedNewsCount = 0;
       newsContainer.innerHTML = '';
-      const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-      for (const item of items) {
-        let formattedDate = '';
-        if (item.pubDate) {
-          const d = new Date(item.pubDate);
-          const month = d.getMonth() + 1;
-          const day = d.getDate();
-          const weekday = weekdays[d.getDay()];
-          const hours = String(d.getHours()).padStart(2, '0');
-          const minutes = String(d.getMinutes()).padStart(2, '0');
-          formattedDate = `${month}月${day}日(${weekday}) ${hours}:${minutes}`;
-        }
-        const sourceText = item.source ? `<span class="font-medium">${item.source}</span> / ` : '';
-        const a = document.createElement('a');
-        a.href = item.link;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        a.className = 'news-item block transition-colors duration-300';
-        const innerWrapper = document.createElement('div');
-        innerWrapper.className = 'news-item-inner';
-        const ogpImageContainer = document.createElement('div');
-        ogpImageContainer.className = 'news-ogp-image-container';
-        innerWrapper.appendChild(ogpImageContainer);
-        const textContent = document.createElement('div');
-        textContent.className = 'news-text-content';
-        textContent.innerHTML = `<p class="font-semibold text-lg sm:text-xl">${item.title}</p><p class="text-base text-gray-600 dark:text-gray-300 mt-1 line-clamp-3">${item.description}</p><p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${sourceText}${formattedDate}</p>`;
-        innerWrapper.appendChild(textContent);
-        a.appendChild(innerWrapper);
-        newsContainer.appendChild(a);
-        (async () => {
-          const imageUrl = await fetchOgpImageWithRetry(item.link, 2, 800);
-          if (imageUrl) {
-            const img = document.createElement('img');
-            img.src = imageUrl;
-            img.alt = item.title;
-            img.className = 'news-ogp-image';
-            img.onerror = () => { if (ogpImageContainer.parentNode) ogpImageContainer.remove(); };
-            ogpImageContainer.appendChild(img);
-          } else {
-            if (ogpImageContainer.parentNode) ogpImageContainer.remove();
-          }
-        })();
-      }
+      newsMoreButtonWrapper = document.createElement('div');
+      newsMoreButtonWrapper.className = 'pt-4 hidden flex justify-center';
+      const moreButton = document.createElement('button');
+      moreButton.id = 'news-more-button';
+      moreButton.type = 'button';
+      moreButton.className = 'px-6 py-2 rounded-full border border-gray-300 dark:border-gray-500 text-blue-500 font-semibold';
+      moreButton.textContent = 'もっと見る';
+      moreButton.addEventListener('click', showMoreNews);
+      newsMoreButtonWrapper.appendChild(moreButton);
+      newsContainer.appendChild(newsMoreButtonWrapper);
+      showMoreNews();
       return true;
     }, newsContainer, 'ニュースを取得中...', 'ニュースの取得に失敗しました。', 2, 1500);
   }
