@@ -466,7 +466,7 @@ body {
   z-index: 9000;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transform: translateY(-100%);
+  transform: translateY(calc(-100% - 20px));
   transition: transform 0.25s ease-out;
   pointer-events: none;
 }
