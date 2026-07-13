@@ -44,7 +44,7 @@
             <div class="relative flex-grow min-w-0">
               <i class="fas fa-search search-icon"></i>
               <input id="search-input-main" type="search" placeholder="検索キーワードを入力..."
-                     class="w-full p-3 pl-9 pr-12 rounded-2xl border border-gray-300 text-base focus:outline-none focus:ring-2 focus:ring-blue-500
+                     class="w-full p-3 pl-9 pr-12 rounded-2xl border border-gray-300 text-base focus:outline-none
                             dark:bg-gray-800 dark:border-gray-500 dark:text-gray-100 dark:placeholder-gray-400"
                      autocomplete="off">
               <i id="clear-button-main" class="fas fa-times-circle clear-button hidden"></i>
@@ -103,7 +103,10 @@
       </div>
     </section>
     <footer class="text-center text-gray-500 dark:text-gray-400 text-sm sm:text-base mt-8">
-      <span id="copyright-text"></span>
+      <button id="customize-button" type="button" class="accent-text text-xs sm:text-sm font-medium mb-2">
+        <i class="fas fa-palette mr-1"></i>カスタマイズ
+      </button>
+      <div><span id="copyright-text"></span></div>
     </footer>
   </main>
   <div id="search-overlay" class="hidden">
@@ -112,14 +115,14 @@
         <div class="relative flex-grow min-w-0">
           <i class="fas fa-search search-icon text-lg"></i>
           <input id="search-input-overlay" type="search"
-                 class="w-full p-3 pl-9 pr-12 rounded-2xl border border-gray-300 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500
+                 class="w-full p-3 pl-9 pr-12 rounded-2xl border border-gray-300 text-lg focus:outline-none
                         dark:bg-gray-800 dark:border-gray-500 dark:text-gray-100 dark:placeholder-gray-400"
                  placeholder="検索キーワード..." autocomplete="off">
           <i id="clear-button-overlay" class="fas fa-times-circle clear-button hidden"></i>
         </div>
       </form>
       <button id="cancel-button"
-              class="flex-shrink-0 text-blue-500 font-semibold text-lg ml-1">
+              class="flex-shrink-0 accent-text font-semibold text-lg ml-1">
         キャンセル
       </button>
     </div>
@@ -129,12 +132,29 @@
     <div id="kanji-inner" class="rounded-3xl shadow-xl max-w-2xl w-[90%] bg-white dark:bg-gray-800 sm:w-[90%] sm:max-w-2xl sm:rounded-3xl sm:shadow-xl sm:bg-white sm:dark:bg-gray-800">
     <div class="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-600">
       <h3 class="text-xl font-semibold">漢字チェック</h3>
-      <button id="kanji-cancel-button" class="text-blue-500 font-semibold text-lg">閉じる</button>
+      <button id="kanji-cancel-button" class="accent-text font-semibold text-lg">閉じる</button>
     </div>
     <div class="flex-grow overflow-y-auto p-4">
-      <textarea id="kanji-textarea" placeholder="ここに入力..." class="w-full h-[25vh] p-3 rounded-2xl border border-gray-300 text-4xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-500 dark:text-gray-100 dark:placeholder-gray-400"></textarea>
+      <textarea id="kanji-textarea" placeholder="ここに入力..." class="w-full h-[25vh] p-3 rounded-2xl border border-gray-300 text-4xl focus:outline-none dark:bg-gray-800 dark:border-gray-500 dark:text-gray-100 dark:placeholder-gray-400"></textarea>
       <div class="mt-3 flex items-center justify-end space-x-2">
         <button id="kanji-clear-button" class="px-4 py-2 rounded-2xl border border-gray-300 dark:border-gray-600">クリア</button>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div id="theme-overlay" class="hidden">
+    <div id="theme-inner">
+      <div class="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-600">
+        <h3 class="text-xl font-semibold">テーマカラー</h3>
+        <button id="theme-cancel-button" class="accent-text font-semibold text-lg">閉じる</button>
+      </div>
+      <div class="p-6 grid grid-cols-3 gap-6" id="theme-swatches">
+        <button type="button" class="theme-swatch" data-theme="blue" style="background:#3b82f6" aria-label="ブルー"></button>
+        <button type="button" class="theme-swatch" data-theme="green" style="background:#10b981" aria-label="グリーン"></button>
+        <button type="button" class="theme-swatch" data-theme="purple" style="background:#8b5cf6" aria-label="パープル"></button>
+        <button type="button" class="theme-swatch" data-theme="pink" style="background:#ec4899" aria-label="ピンク"></button>
+        <button type="button" class="theme-swatch" data-theme="orange" style="background:#f97316" aria-label="オレンジ"></button>
+        <button type="button" class="theme-swatch" data-theme="red" style="background:#ef4444" aria-label="レッド"></button>
       </div>
     </div>
   </div>
