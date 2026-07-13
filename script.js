@@ -465,8 +465,8 @@ function initApp() {
 
   const searchWrapperObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      if (!entry.isIntersecting && entry.boundingClientRect.top < 0) stickySearchBar.classList.remove('hidden');
-      else stickySearchBar.classList.add('hidden');
+      if (!entry.isIntersecting && entry.boundingClientRect.top < 0) stickySearchBar.classList.add('visible');
+      else stickySearchBar.classList.remove('visible');
     });
   }, { threshold: 0 });
   searchWrapperObserver.observe(searchWrapper);
