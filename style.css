@@ -466,10 +466,13 @@ body {
   z-index: 9000;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  animation: slideInFromTop 0.25s ease-out;
+  transform: translateY(-100%);
+  transition: transform 0.25s ease-out;
+  pointer-events: none;
 }
-#sticky-search-bar.hidden {
-  display: none;
+#sticky-search-bar.visible {
+  transform: translateY(0);
+  pointer-events: auto;
 }
 @media (prefers-color-scheme: dark) {
   #sticky-search-bar {
