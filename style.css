@@ -458,3 +458,21 @@ body {
     border-color: #e5e7eb;
   }
 }
+#sticky-search-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 9000;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  animation: slideInFromTop 0.25s ease-out;
+}
+#sticky-search-bar.hidden {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  #sticky-search-bar {
+    background: #242424;
+  }
+}
