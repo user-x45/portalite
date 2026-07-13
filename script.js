@@ -19,6 +19,17 @@ function initApp() {
   const copyrightText = document.getElementById('copyright-text');
   const currentYear = new Date().getFullYear();
   copyrightText.textContent = `© 2025 - ${currentYear} Portalite`;
+  const THEME_KEY = 'portalite-theme';
+  const customizeButton = document.getElementById('customize-button');
+  const themeOverlay = document.getElementById('theme-overlay');
+  const themeCancelButton = document.getElementById('theme-cancel-button');
+  const themeSwatches = document.querySelectorAll('.theme-swatch');
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_KEY, theme);
+    themeSwatches.forEach(sw => sw.classList.toggle('selected', sw.dataset.theme === theme));
+  }
+  applyTheme(localStorage.getItem(THEME_KEY) || 'blue');
 
   function showLoading(container, message = '読み込み中...') {
     container.innerHTML = `<div class="flex flex-col items-center justify-center py-8"><div class="loading-spinner"></div><p class="mt-3 text-gray-500 dark:text-gray-400">${message}</p></div>`;
@@ -481,7 +492,24 @@ function initApp() {
   kanjiButton.addEventListener('click', openKanjiOverlay);
   kanjiCancelButton.addEventListener('click', closeKanjiOverlay);
   kanjiClearButton.addEventListener('click', () => { kanjiTextarea.value = ''; kanjiTextarea.focus(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && kanjiOverlay.style.display === 'flex') closeKanjiOverlay(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && kanjiOverlay.style.display === 'flex') closeKanjiOverlay();
+    if (e.key === 'Escape' && themeOverlay.style.display === 'flex') closeThemeOverlay();
+  });
+  function openThemeOverlay() {
+    themeOverlay.style.display = 'flex';
+    themeOverlay.classList.remove('hidden');
+  }
+  function closeThemeOverlay() {
+    themeOverlay.style.display = 'none';
+    themeOverlay.classList.add('hidden');
+  }
+  customizeButton.addEventListener('click', openThemeOverlay);
+  themeCancelButton.addEventListener('click', closeThemeOverlay);
+  themeOverlay.addEventListener('click', (e) => { if (e.target === themeOverlay) closeThemeOverlay(); });
+  themeSwatches.forEach(sw => {
+    sw.addEventListener('click', () => { applyTheme(sw.dataset.theme); closeThemeOverlay(); });
+  });
   function handleSearchSubmit(event) {
     event.preventDefault();
     const inputElement = event.target.querySelector('input[type="search"]');
