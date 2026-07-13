@@ -9,6 +9,9 @@ function initApp() {
   const cancelButton = document.getElementById('cancel-button');
   const overlaySuggestions = document.getElementById('suggestions-container-overlay');
   const overlayClearButton = document.getElementById('clear-button-overlay');
+  const stickySearchBar = document.getElementById('sticky-search-bar');
+  const stickyInput = document.getElementById('search-input-sticky');
+  const searchWrapper = document.getElementById('search-container-wrapper');
   const newsRssUrl = 'https://news.ceek.jp/search.cgi?category_id=entertainment&feed=1';
   const HISTORY_KEY = 'search-history';
   const HISTORY_LIMIT = 20;
@@ -459,6 +462,15 @@ function initApp() {
   }
   window.addEventListener('resize', () => { toggleClearButton(mainInput.value, mainClearButton); toggleClearButton(overlayInput.value, overlayClearButton); });
   toggleClearButton(mainInput.value, mainClearButton);
+
+  const searchWrapperObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting && entry.boundingClientRect.top < 0) stickySearchBar.classList.remove('hidden');
+      else stickySearchBar.classList.add('hidden');
+    });
+  }, { threshold: 0 });
+  searchWrapperObserver.observe(searchWrapper);
+  stickyInput.addEventListener('click', () => { openMobileSearchOverlay(mainInput.value); });
 
   fetchWeather();
   fetchNews();
