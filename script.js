@@ -318,8 +318,19 @@ function initApp() {
     });
   }
 
-  function renderSuggestions(list, container, isHistory = false, query = '') {
+  function renderSuggestions(list, container, isHistory = false, query = '', calcResult = null) {
     container.innerHTML = '';
+    if (calcResult !== null) {
+      const calcItem = document.createElement('div');
+      calcItem.className = 'p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150 flex items-center border-b border-gray-200 dark:border-gray-600 font-semibold';
+      calcItem.innerHTML = `<i class="fas fa-equals text-gray-400 mr-2"></i><span>= ${calcResult}</span>`;
+      calcItem.addEventListener('click', () => {
+        if (container === overlaySuggestions) { overlayInput.value = String(calcResult); toggleClearButton(overlayInput.value, overlayClearButton); }
+        else { mainInput.value = String(calcResult); toggleClearButton(mainInput.value, mainClearButton); }
+        doSearch(String(calcResult));
+      });
+      container.appendChild(calcItem);
+    }
     if (list && list.length > 0) {
       list.forEach((s, index) => {
         const item = document.createElement('div');
@@ -413,11 +424,23 @@ function initApp() {
     mainSuggestions.classList.add('hidden');
   }
   function debounce(fn, wait = 200) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); }; }
+  function evaluateCalculation(query) {
+    const sanitized = query.replace(/×/g, '*').replace(/÷/g, '/').replace(/,/g, '');
+    if (!/^[0-9+\-*/().\s]+$/.test(sanitized)) return null;
+    if (!/[+\-*/]/.test(sanitized.replace(/^-/, ''))) return null;
+    if (/[+\-*/.]{2,}|[+\-*/.]$/.test(sanitized.trim())) return null;
+    try {
+      const result = Function(`"use strict";return (${sanitized})`)();
+      if (typeof result !== 'number' || !isFinite(result)) return null;
+      return Number.isInteger(result) ? result : Math.round(result * 1e6) / 1e6;
+    } catch { return null; }
+  }
   const onInput = debounce(async (evt, container) => {
     const q = evt.target.value.trim();
     if (!q) { renderSearchHistory(container); return; }
+    const calcResult = evaluateCalculation(q);
     const suggestions = await fetchGoogleSuggestionsJSONP(q);
-    renderSuggestions(suggestions, container, false, q);
+    renderSuggestions(suggestions, container, false, q, calcResult);
   }, 180);
   function toggleClearButton(query, clearButton) { if (query.length > 0) clearButton.classList.remove('hidden'); else clearButton.classList.add('hidden'); }
   function openMobileSearchOverlay(query = '') {
