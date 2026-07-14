@@ -331,8 +331,9 @@ function initApp() {
       });
       container.appendChild(calcItem);
     }
-    if (list && list.length > 0) {
-      list.forEach((s, index) => {
+    const filteredList = calcResult !== null ? list.filter(s => s !== String(calcResult)) : list;
+    if (filteredList && filteredList.length > 0) {
+      filteredList.forEach((s, index) => {
         const item = document.createElement('div');
         if (isHistory) {
           item.className = `p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150 flex items-center justify-between group`;
@@ -358,11 +359,11 @@ function initApp() {
             doSearch(s);
           });
         }
-        if (index < list.length - 1) item.classList.add('border-b', 'border-gray-200', 'dark:border-gray-600');
+        if (index < filteredList.length - 1) item.classList.add('border-b', 'border-gray-200', 'dark:border-gray-600');
         container.appendChild(item);
       });
     }
-    if (isHistory && list.length > 0) {
+    if (isHistory && filteredList.length > 0) {
       const clearButtonWrapper = document.createElement('div');
       clearButtonWrapper.className = 'mt-2 px-2';
       const clearButton = document.createElement('button');
@@ -425,10 +426,12 @@ function initApp() {
   }
   function debounce(fn, wait = 200) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); }; }
   function evaluateCalculation(query) {
-    const sanitized = query.replace(/×/g, '*').replace(/÷/g, '/').replace(/,/g, '');
+    let sanitized = query.trim().replace(/=+$/, '').trim();
+    sanitized = sanitized.replace(/×/g, '*').replace(/÷/g, '/').replace(/,/g, '');
+    if (!sanitized) return null;
     if (!/^[0-9+\-*/().\s]+$/.test(sanitized)) return null;
     if (!/[+\-*/]/.test(sanitized.replace(/^-/, ''))) return null;
-    if (/[+\-*/.]{2,}|[+\-*/.]$/.test(sanitized.trim())) return null;
+    if (/[+\-*/.]{2,}|[+\-*/.]$/.test(sanitized)) return null;
     try {
       const result = Function(`"use strict";return (${sanitized})`)();
       if (typeof result !== 'number' || !isFinite(result)) return null;
