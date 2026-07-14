@@ -331,7 +331,7 @@ function initApp() {
       });
       container.appendChild(calcItem);
     }
-    const filteredList = calcResult !== null ? list.filter(s => s !== String(calcResult)) : list;
+    const filteredList = calcResult !== null ? list.filter(s => s.trim() !== `= ${calcResult}`) : list;
     if (filteredList && filteredList.length > 0) {
       filteredList.forEach((s, index) => {
         const item = document.createElement('div');
