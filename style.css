@@ -23,13 +23,13 @@
   --md-error-container: hsl(5 90% 92%);
   --md-on-error-container: hsl(5 74% 20%);
 
-  --md-surface: hsl(var(--md-hue) var(--md-neutral-sat) 99% / 0.35);
-  --md-surface-dim: hsl(var(--md-hue) var(--md-neutral-sat) 89% / 0.35);
-  --md-surface-container-lowest: hsl(var(--md-hue) var(--md-neutral-sat) 100% / 0.3);
-  --md-surface-container-low: hsl(var(--md-hue) var(--md-neutral-sat) 97% / 0.3);
-  --md-surface-container: hsl(var(--md-hue) var(--md-neutral-sat) 95% / 0.35);
-  --md-surface-container-high: hsl(var(--md-hue) var(--md-neutral-sat) 92% / 0.4);
-  --md-surface-container-highest: hsl(var(--md-hue) var(--md-neutral-sat) 89% / 0.45);
+  --md-surface: hsl(var(--md-hue) var(--md-neutral-sat) 99% / 0.5);
+  --md-surface-dim: hsl(var(--md-hue) var(--md-neutral-sat) 89% / 0.5);
+  --md-surface-container-lowest: hsl(var(--md-hue) var(--md-neutral-sat) 100% / 0.45);
+  --md-surface-container-low: hsl(var(--md-hue) var(--md-neutral-sat) 97% / 0.45);
+  --md-surface-container: hsl(var(--md-hue) var(--md-neutral-sat) 95% / 0.5);
+  --md-surface-container-high: hsl(var(--md-hue) var(--md-neutral-sat) 92% / 0.55);
+  --md-surface-container-highest: hsl(var(--md-hue) var(--md-neutral-sat) 89% / 0.6);
 
   --md-on-surface: hsl(var(--md-hue) calc(var(--md-neutral-sat) + 8%) 12%);
   --md-on-surface-variant: hsl(var(--md-hue) 8% 36%);
@@ -79,13 +79,13 @@
     --md-error-container: hsl(5 60% 30%);
     --md-on-error-container: hsl(5 90% 92%);
 
-    --md-surface: hsl(var(--md-hue) 10% 9% / 0.35);
-    --md-surface-dim: hsl(var(--md-hue) 10% 9% / 0.35);
-    --md-surface-container-lowest: hsl(var(--md-hue) 12% 6% / 0.3);
-    --md-surface-container-low: hsl(var(--md-hue) 10% 12% / 0.3);
-    --md-surface-container: hsl(var(--md-hue) 10% 15% / 0.35);
-    --md-surface-container-high: hsl(var(--md-hue) 10% 19% / 0.4);
-    --md-surface-container-highest: hsl(var(--md-hue) 10% 24% / 0.45);
+    --md-surface: hsl(var(--md-hue) 15% 5% / 0.55);
+    --md-surface-dim: hsl(var(--md-hue) 15% 5% / 0.55);
+    --md-surface-container-lowest: hsl(var(--md-hue) 18% 3% / 0.5);
+    --md-surface-container-low: hsl(var(--md-hue) 15% 7% / 0.5);
+    --md-surface-container: hsl(var(--md-hue) 15% 10% / 0.55);
+    --md-surface-container-high: hsl(var(--md-hue) 15% 13% / 0.6);
+    --md-surface-container-highest: hsl(var(--md-hue) 15% 17% / 0.65);
 
     --md-on-surface: hsl(var(--md-hue) 10% 92%);
     --md-on-surface-variant: hsl(var(--md-hue) 8% 76%);
@@ -111,13 +111,13 @@
   --md-error-container: hsl(5 60% 30%);
   --md-on-error-container: hsl(5 90% 92%);
 
-  --md-surface: hsl(var(--md-hue) 10% 9% / 0.35);
-  --md-surface-dim: hsl(var(--md-hue) 10% 9% / 0.35);
-  --md-surface-container-lowest: hsl(var(--md-hue) 12% 6% / 0.3);
-  --md-surface-container-low: hsl(var(--md-hue) 10% 12% / 0.3);
-  --md-surface-container: hsl(var(--md-hue) 10% 15% / 0.35);
-  --md-surface-container-high: hsl(var(--md-hue) 10% 19% / 0.4);
-  --md-surface-container-highest: hsl(var(--md-hue) 10% 24% / 0.45);
+  --md-surface: hsl(var(--md-hue) 15% 5% / 0.55);
+  --md-surface-dim: hsl(var(--md-hue) 15% 5% / 0.55);
+  --md-surface-container-lowest: hsl(var(--md-hue) 18% 3% / 0.5);
+  --md-surface-container-low: hsl(var(--md-hue) 15% 7% / 0.5);
+  --md-surface-container: hsl(var(--md-hue) 15% 10% / 0.55);
+  --md-surface-container-high: hsl(var(--md-hue) 15% 13% / 0.6);
+  --md-surface-container-highest: hsl(var(--md-hue) 15% 17% / 0.65);
 
   --md-on-surface: hsl(var(--md-hue) 10% 92%);
   --md-on-surface-variant: hsl(var(--md-hue) 8% 76%);
