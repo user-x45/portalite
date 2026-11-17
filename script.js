@@ -819,6 +819,74 @@ function initApp() {
   if (mainForm) mainForm.addEventListener('submit', handleSearchSubmit);
   if (overlayForm) overlayForm.addEventListener('submit', handleSearchSubmit);
 
+  const NOTICE_API_URL = 'https://news-proxy.user-x45.workers.dev/api/notices';
+  const NOTICE_MAX_LENGTH = 300;
+  const noticeFab = document.getElementById('notice-fab');
+  const noticeOverlay = document.getElementById('notice-overlay');
+  const noticeCancelButton = document.getElementById('notice-cancel-button');
+  const noticeText = document.getElementById('notice-text');
+  const noticeCount = document.getElementById('notice-count');
+  const noticeStatus = document.getElementById('notice-status');
+  const noticeSend = document.getElementById('notice-send');
+  let lastScrollPositionNotice = 0;
+  function setNoticeStatus(message, type) {
+    noticeStatus.textContent = message;
+    noticeStatus.classList.toggle('md-error-text', type === 'error');
+    noticeStatus.classList.toggle('md-accent-text', type === 'ok');
+    noticeStatus.classList.toggle('md-on-surface-variant', !type);
+  }
+  function updateNoticeCount() {
+    noticeCount.textContent = `${noticeText.value.length}/${NOTICE_MAX_LENGTH}`;
+  }
+  function openNoticeOverlay() {
+    lastScrollPositionNotice = window.scrollY;
+    document.body.style.top = `-${lastScrollPositionNotice}px`;
+    document.body.classList.add('no-scroll');
+    noticeOverlay.style.display = 'flex';
+    noticeOverlay.classList.remove('hidden');
+    setNoticeStatus('');
+    updateNoticeCount();
+    noticeText.focus();
+  }
+  function closeNoticeOverlay() {
+    noticeOverlay.style.display = 'none';
+    noticeOverlay.classList.add('hidden');
+    document.body.classList.remove('no-scroll');
+    document.body.style.top = '';
+    window.scrollTo(0, lastScrollPositionNotice);
+  }
+  async function sendNotice() {
+    const body = noticeText.value.trim();
+    if (!body) {
+      setNoticeStatus('内容を入力してください', 'error');
+      noticeText.focus();
+      return;
+    }
+    noticeSend.disabled = true;
+    setNoticeStatus('送信中...');
+    try {
+      const res = await fetch(NOTICE_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body })
+      });
+      if (!res.ok) throw new Error(res.status);
+      noticeText.value = '';
+      updateNoticeCount();
+      setNoticeStatus('送信しました', 'ok');
+    } catch {
+      setNoticeStatus('送信に失敗しました。通信環境をご確認ください', 'error');
+    }
+    noticeSend.disabled = false;
+  }
+  noticeFab.addEventListener('click', openNoticeOverlay);
+  noticeCancelButton.addEventListener('click', closeNoticeOverlay);
+  noticeOverlay.addEventListener('click', (e) => { if (e.target === noticeOverlay) closeNoticeOverlay(); });
+  noticeText.addEventListener('input', updateNoticeCount);
+  noticeText.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') sendNotice(); });
+  noticeSend.addEventListener('click', sendNotice);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && noticeOverlay.style.display === 'flex') closeNoticeOverlay(); });
+
   const bottomMenuItems = document.querySelectorAll('.bottom-menu-item');
   bottomMenuItems.forEach(item => {
     item.addEventListener('click', () => {
