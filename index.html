@@ -168,6 +168,10 @@
     </button>
   </nav>
 
+  <button type="button" id="notice-fab" aria-label="お知らせを送る">
+    <i class="fas fa-paper-plane"></i>
+  </button>
+
   <div id="search-overlay" class="hidden">
     <div class="p-4 flex items-center space-x-2 md-outline-divider">
       <form action="#" id="search-form-overlay" onsubmit="event.preventDefault(); doSearch(document.getElementById('search-input-overlay').value.trim());" class="relative flex-grow min-w-0 flex items-center space-x-2">
@@ -256,6 +260,25 @@
             <button type="button" class="theme-swatch" data-theme="orange" style="background:#f97316" aria-label="オレンジ"></button>
             <button type="button" class="theme-swatch" data-theme="red" style="background:#ef4444" aria-label="レッド"></button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="notice-overlay" class="hidden">
+    <div id="notice-inner">
+      <div class="p-4 flex items-center justify-between md-dialog-header">
+        <h3 class="md-title-large">お知らせを送る</h3>
+        <button id="notice-cancel-button" class="md-dialog-close">閉じる</button>
+      </div>
+      <div class="p-4">
+        <textarea id="notice-text" maxlength="300" rows="5" placeholder="時計に表示するお知らせを入力..." class="text-lg"></textarea>
+        <div class="mt-2 text-right">
+          <span id="notice-count" class="text-sm md-on-surface-variant">0/300</span>
+        </div>
+        <div class="mt-3 flex items-center justify-between space-x-3">
+          <p id="notice-status" class="text-sm md-on-surface-variant min-w-0" role="status"></p>
+          <button id="notice-send" type="button" class="md-btn-filled flex-shrink-0">送信</button>
         </div>
       </div>
     </div>
