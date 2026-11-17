@@ -828,6 +828,15 @@ function initApp() {
   const noticeCount = document.getElementById('notice-count');
   const noticeStatus = document.getElementById('notice-status');
   const noticeSend = document.getElementById('notice-send');
+  const noticeList = document.getElementById('notice-list');
+  const noticeSummary = document.getElementById('notice-summary');
+  const noticeClear = document.getElementById('notice-clear');
+  const NOTICE_POLL_MS = 5000;
+  let noticeTimer = 0;
+  let noticeVersion = 0;
+  let noticeBusy = false;
+  let noticeLoaded = false;
+  let noticeIds = [];
   let lastScrollPositionNotice = 0;
   function setNoticeStatus(message, type) {
     noticeStatus.textContent = message;
@@ -847,13 +856,109 @@ function initApp() {
     setNoticeStatus('');
     updateNoticeCount();
     noticeText.focus();
+    loadNotices();
+    clearInterval(noticeTimer);
+    noticeTimer = setInterval(() => { if (!document.hidden) loadNotices(); }, NOTICE_POLL_MS);
   }
   function closeNoticeOverlay() {
+    clearInterval(noticeTimer);
     noticeOverlay.style.display = 'none';
     noticeOverlay.classList.add('hidden');
     document.body.classList.remove('no-scroll');
     document.body.style.top = '';
     window.scrollTo(0, lastScrollPositionNotice);
+  }
+  async function noticeRequest(path, options) {
+    const res = await fetch(NOTICE_API_URL + path, {
+      cache: 'no-store',
+      ...options,
+      headers: options && options.body ? { 'Content-Type': 'application/json' } : {}
+    });
+    if (!res.ok) throw new Error(res.status);
+    return res.json();
+  }
+  function formatNoticeTime(ms) {
+    const d = new Date(ms);
+    return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  function renderNoticeList(list) {
+    noticeLoaded = true;
+    noticeIds = list.map(n => n.id);
+    const unread = list.filter(n => !n.readAt).length;
+    noticeSummary.textContent = list.length ? `未読${unread}件 / 既読${list.length - unread}件` : '';
+    noticeClear.classList.toggle('hidden', !list.length);
+    noticeList.textContent = '';
+    if (!list.length) {
+      const empty = document.createElement('li');
+      empty.className = 'text-center text-sm md-on-surface-variant py-3';
+      empty.textContent = 'まだ送っていません';
+      noticeList.appendChild(empty);
+      return;
+    }
+    list.forEach(n => {
+      const li = document.createElement('li');
+      li.className = 'notice-item' + (n.readAt ? ' read' : '');
+      const head = document.createElement('div');
+      head.className = 'notice-item-head';
+      const time = document.createElement('span');
+      time.textContent = formatNoticeTime(n.createdAt);
+      const right = document.createElement('span');
+      right.className = 'notice-item-right';
+      const state = document.createElement('span');
+      state.className = 'notice-state' + (n.readAt ? ' read' : '');
+      const icon = document.createElement('i');
+      icon.className = 'fas ' + (n.readAt ? 'fa-check-double' : 'fa-check');
+      state.appendChild(icon);
+      state.appendChild(document.createTextNode(n.readAt ? `既読 ${formatNoticeTime(n.readAt)}` : '未読'));
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'notice-delete';
+      del.dataset.id = n.id;
+      del.setAttribute('aria-label', '削除');
+      del.innerHTML = '<i class="fas fa-trash-can"></i>';
+      right.appendChild(state);
+      right.appendChild(del);
+      head.appendChild(time);
+      head.appendChild(right);
+      li.appendChild(head);
+      if (n.title) {
+        const title = document.createElement('p');
+        title.className = 'md-title-medium notice-text';
+        title.textContent = n.title;
+        li.appendChild(title);
+      }
+      if (n.body) {
+        const text = document.createElement('p');
+        text.className = 'md-body-large notice-text';
+        text.textContent = n.body;
+        li.appendChild(text);
+      }
+      noticeList.appendChild(li);
+    });
+  }
+  async function loadNotices() {
+    if (noticeBusy) return;
+    noticeBusy = true;
+    const version = noticeVersion;
+    try {
+      const data = await noticeRequest('', {});
+      if (version === noticeVersion) renderNoticeList(data.notices || []);
+    } catch {
+      if (!noticeLoaded) noticeList.innerHTML = '<li class="text-center text-sm md-error-text py-3">送信済みを読み込めません</li>';
+    }
+    noticeBusy = false;
+  }
+  async function removeNotices(ids) {
+    if (!ids.length) return;
+    noticeVersion++;
+    try {
+      const data = await noticeRequest('/delete', { method: 'POST', body: JSON.stringify({ ids }) });
+      noticeVersion++;
+      renderNoticeList(data.notices || []);
+      setNoticeStatus('削除しました', 'ok');
+    } catch {
+      setNoticeStatus('削除に失敗しました', 'error');
+    }
   }
   async function sendNotice() {
     const body = noticeText.value.trim();
@@ -865,12 +970,9 @@ function initApp() {
     noticeSend.disabled = true;
     setNoticeStatus('送信中...');
     try {
-      const res = await fetch(NOTICE_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body })
-      });
-      if (!res.ok) throw new Error(res.status);
+      const data = await noticeRequest('', { method: 'POST', body: JSON.stringify({ body }) });
+      noticeVersion++;
+      renderNoticeList(data.notices || []);
       noticeText.value = '';
       updateNoticeCount();
       setNoticeStatus('送信しました', 'ok');
@@ -885,6 +987,13 @@ function initApp() {
   noticeText.addEventListener('input', updateNoticeCount);
   noticeText.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') sendNotice(); });
   noticeSend.addEventListener('click', sendNotice);
+  noticeList.addEventListener('click', (e) => {
+    const btn = e.target.closest('.notice-delete');
+    if (btn) removeNotices([btn.dataset.id]);
+  });
+  noticeClear.addEventListener('click', () => {
+    if (window.confirm('送信済みのお知らせをすべて削除してよろしいですか？時計の一覧からも消えます。')) removeNotices(noticeIds);
+  });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && noticeOverlay.style.display === 'flex') closeNoticeOverlay(); });
 
   const bottomMenuItems = document.querySelectorAll('.bottom-menu-item');
